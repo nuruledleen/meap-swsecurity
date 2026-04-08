@@ -5,20 +5,28 @@ require_once 'connect.php';
 requireLogin();
 
 $flash = getFlash();
-$selectedDate = trim($_GET['parking_date'] ?? '');
-$selectedTime = trim($_GET['parking_time'] ?? '');
-$availableSlots = [];
+$selectedDate = '';
+$selectedTime = '';
+$availableSlots = array();
 $searched = false;
+
+if (isset($_GET['parking_date'])) {
+    $selectedDate = trim($_GET['parking_date']);
+}
+
+if (isset($_GET['parking_time'])) {
+    $selectedTime = trim($_GET['parking_time']);
+}
 
 if (isset($_GET['search'])) {
     $searched = true;
 
     if (!validDate($selectedDate) || !validTime($selectedTime)) {
-        $flash = ['type' => 'error', 'message' => 'Please enter a valid date and time.'];
+        $flash = array('type' => 'error', 'message' => 'Please enter a valid date and time.');
     } elseif (!bookingDateTimeIsFuture($selectedDate, $selectedTime)) {
-        $flash = ['type' => 'error', 'message' => 'Please choose a current or future time slot.'];
+        $flash = array('type' => 'error', 'message' => 'Please choose a current or future time slot.');
     } else {
-        $bookedSlots = [];
+        $bookedSlots = array();
         $stmt = $conn->prepare("SELECT slot_number FROM bookings WHERE parking_date = ? AND parking_time = ? AND status = 'ACTIVE'");
         $stmt->bind_param("ss", $selectedDate, $selectedTime);
         $stmt->execute();
@@ -117,4 +125,3 @@ if (isset($_GET['search'])) {
   </div>
 </body>
 </html>
-
