@@ -7,13 +7,33 @@ startSecureSession();
 if (isset($_POST['register'])) {
     verifyCsrf();
 
-    $name = trim($_POST['name'] ?? '');
-    $phone = preg_replace('/\s+/', '', $_POST['phone'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $confirm = $_POST['confirm_pass'] ?? '';
+    $name = '';
+    $phone = '';
+    $email = '';
+    $password = '';
+    $confirm = '';
 
-    if ($name === '' || $phone === '' || $email === '' || $password === '' || $confirm === '') {
+    if (isset($_POST['name'])) {
+        $name = trim($_POST['name']);
+    }
+
+    if (isset($_POST['phone'])) {
+        $phone = preg_replace('/\s+/', '', $_POST['phone']);
+    }
+
+    if (isset($_POST['email'])) {
+        $email = trim($_POST['email']);
+    }
+
+    if (isset($_POST['password'])) {
+        $password = $_POST['password'];
+    }
+
+    if (isset($_POST['confirm_pass'])) {
+        $confirm = $_POST['confirm_pass'];
+    }
+
+    if ($name == '' || $phone == '' || $email == '' || $password == '' || $confirm == '') {
         echo "<script>alert('All fields are required!');</script>";
     } elseif (!validName($name)) {
         echo "<script>alert('Name should be 3 to 60 characters and contain only valid letters.');</script>";
@@ -83,7 +103,7 @@ if (isset($_POST['register'])) {
     <img src="parking.png" width="100" alt="Parking">
     <h2>REGISTRATION</h2>
     <form method="post" action="">
-      <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
+      <input type="hidden" name="csrf_token" value="<?php echo csrfToken(); ?>">
       <div class="input-box">
         <input type="text" name="name" placeholder="Enter your name" required>
       </div>
@@ -109,4 +129,3 @@ if (isset($_POST['register'])) {
   </div>
 </body>
 </html>
-
