@@ -11,7 +11,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 verifyCsrf();
 
-$bookingId = filter_input(INPUT_POST, 'booking_id', FILTER_VALIDATE_INT);
+$bookingId = 0;
+
+if (isset($_POST['booking_id'])) {
+    $bookingId = (int) $_POST['booking_id'];
+}
 
 if (!$bookingId) {
     setFlash('error', 'Invalid booking selected.');
@@ -31,4 +35,3 @@ if ($stmt->affected_rows > 0) {
 
 header('Location: view_booking.php');
 exit();
-
