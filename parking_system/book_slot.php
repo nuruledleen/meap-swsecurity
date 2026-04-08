@@ -4,10 +4,33 @@ require_once 'connect.php';
 
 requireLogin();
 
-$slot = trim($_GET['slot'] ?? $_POST['slot'] ?? '');
-$parkingDate = trim($_GET['parking_date'] ?? $_POST['parking_date'] ?? '');
-$parkingTime = trim($_GET['parking_time'] ?? $_POST['parking_time'] ?? '');
-$vehiclePlate = trim($_POST['vehicle_plate'] ?? '');
+$slot = '';
+$parkingDate = '';
+$parkingTime = '';
+$vehiclePlate = '';
+$error = '';
+
+if (isset($_GET['slot'])) {
+    $slot = trim($_GET['slot']);
+} elseif (isset($_POST['slot'])) {
+    $slot = trim($_POST['slot']);
+}
+
+if (isset($_GET['parking_date'])) {
+    $parkingDate = trim($_GET['parking_date']);
+} elseif (isset($_POST['parking_date'])) {
+    $parkingDate = trim($_POST['parking_date']);
+}
+
+if (isset($_GET['parking_time'])) {
+    $parkingTime = trim($_GET['parking_time']);
+} elseif (isset($_POST['parking_time'])) {
+    $parkingTime = trim($_POST['parking_time']);
+}
+
+if (isset($_POST['vehicle_plate'])) {
+    $vehiclePlate = trim($_POST['vehicle_plate']);
+}
 
 if (!validSlot($slot) || !validDate($parkingDate) || !validTime($parkingTime)) {
     setFlash('error', 'Invalid booking details were submitted.');
@@ -108,4 +131,3 @@ if (isset($_POST['reserve'])) {
   </div>
 </body>
 </html>
-
