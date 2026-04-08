@@ -78,7 +78,7 @@ $bookings = $stmt->get_result();
                 <td><?php echo e(substr($booking['parking_time'], 0, 5)); ?></td>
                 <td class="status <?php echo strtolower(e($booking['status'])); ?>"><?php echo e($booking['status']); ?></td>
                 <td>
-                  <?php if ($booking['status'] === 'ACTIVE'): ?>
+                  <?php if ($booking['status'] == 'ACTIVE'): ?>
                     <form method="post" action="cancel_booking.php" onsubmit="return confirm('Cancel this booking?');">
                       <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
                       <input type="hidden" name="booking_id" value="<?php echo e((string) $booking['id']); ?>">
@@ -99,4 +99,3 @@ $bookings = $stmt->get_result();
   </div>
 </body>
 </html>
-
