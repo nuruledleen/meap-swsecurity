@@ -1,121 +1,139 @@
 <?php
 
-function startSecureSession(): void
+function startSecureSession()
 {
-    if (session_status() === PHP_SESSION_ACTIVE) {
-        return;
-    }
+    if (session_status() == PHP_SESSION_NONE) {
+        $secure = false;
 
-    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443);
+        if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') {
+            $secure = true;
+        }
 
-    session_set_cookie_params([
-        'lifetime' => 0,
-        'path' => '/',
-        'domain' => '',
-        'secure' => $isHttps,
-        'httponly' => true,
-        'samesite' => 'Strict',
-    ]);
+        session_set_cookie_params(0, '/', '', $secure, true);
+        session_start();
 
-    session_start();
-
-    if (!isset($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        if (!isset($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
     }
 }
 
-function csrfToken(): string
+function csrfToken()
 {
-    return $_SESSION['csrf_token'] ?? '';
+    if (isset($_SESSION['csrf_token'])) {
+        return $_SESSION['csrf_token'];
+    }
+
+    return '';
 }
 
-function verifyCsrf(): void
+function verifyCsrf()
 {
-    $token = $_POST['csrf_token'] ?? '';
+    $token = '';
 
-    if (!$token || !hash_equals(csrfToken(), $token)) {
-        http_response_code(403);
+    if (isset($_POST['csrf_token'])) {
+        $token = $_POST['csrf_token'];
+    }
+
+    if ($token == '' || !hash_equals(csrfToken(), $token)) {
         exit('Invalid request token.');
     }
 }
 
-function requireLogin(): void
+function requireLogin()
 {
     startSecureSession();
 
-    if (empty($_SESSION['user_id'])) {
+    if (!isset($_SESSION['user_id'])) {
         header('Location: login.php');
         exit();
     }
 }
 
-function e(string $value): string
+function e($value)
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
 
-function validEmail(string $email): bool
+function validEmail($email)
 {
-    return (bool) filter_var($email, FILTER_VALIDATE_EMAIL);
+    return filter_var($email, FILTER_VALIDATE_EMAIL);
 }
 
-function validName(string $name): bool
+function validName($name)
 {
-    return (bool) preg_match("/^[A-Za-z' @.-]{3,60}$/", $name);
+    return preg_match("/^[A-Za-z' @.-]{3,60}$/", $name);
 }
 
-function validPhone(string $phone): bool
+function validPhone($phone)
 {
-    return (bool) preg_match('/^01[0-9]{8,9}$/', $phone);
+    return preg_match('/^01[0-9]{8,9}$/', $phone);
 }
 
-function validPlate(string $plate): bool
+function validPlate($plate)
 {
-    return (bool) preg_match('/^[A-Z0-9]{1,10}$/', $plate);
+    return preg_match('/^[A-Z0-9]{1,10}$/', $plate);
 }
 
-function validDate(string $date): bool
+function validDate($date)
 {
-    $parsed = DateTime::createFromFormat('Y-m-d', $date);
-    return $parsed && $parsed->format('Y-m-d') === $date;
-}
+    $check = DateTime::createFromFormat('Y-m-d', $date);
 
-function validTime(string $time): bool
-{
-    $parsed = DateTime::createFromFormat('H:i', $time);
-    return $parsed && $parsed->format('H:i') === $time;
-}
-
-function bookingDateTimeIsFuture(string $date, string $time): bool
-{
-    $booking = DateTime::createFromFormat('Y-m-d H:i', $date . ' ' . $time);
-    return $booking instanceof DateTime && $booking >= new DateTime();
-}
-
-function allowedSlots(): array
-{
-    return ['A1', 'A2', 'A3', 'A4', 'B1', 'B2', 'B3', 'B4'];
-}
-
-function validSlot(string $slot): bool
-{
-    return in_array($slot, allowedSlots(), true);
-}
-
-function setFlash(string $type, string $message): void
-{
-    $_SESSION['flash'] = ['type' => $type, 'message' => $message];
-}
-
-function getFlash(): ?array
-{
-    if (!isset($_SESSION['flash'])) {
-        return null;
+    if ($check && $check->format('Y-m-d') == $date) {
+        return true;
     }
 
-    $flash = $_SESSION['flash'];
-    unset($_SESSION['flash']);
-    return $flash;
+    return false;
 }
 
+function validTime($time)
+{
+    $check = DateTime::createFromFormat('H:i', $time);
+
+    if ($check && $check->format('H:i') == $time) {
+        return true;
+    }
+
+    return false;
+}
+
+function bookingDateTimeIsFuture($date, $time)
+{
+    $booking = DateTime::createFromFormat('Y-m-d H:i', $date . ' ' . $time);
+    $now = new DateTime();
+
+    if ($booking && $booking >= $now) {
+        return true;
+    }
+
+    return false;
+}
+
+function allowedSlots()
+{
+    return array('A1', 'A2', 'A3', 'A4', 'B1', 'B2', 'B3', 'B4');
+}
+
+function validSlot($slot)
+{
+    return in_array($slot, allowedSlots());
+}
+
+function setFlash($type, $message)
+{
+    $_SESSION['flash'] = array(
+        'type' => $type,
+        'message' => $message
+    );
+}
+
+function getFlash()
+{
+    if (isset($_SESSION['flash'])) {
+        $flash = $_SESSION['flash'];
+        unset($_SESSION['flash']);
+        return $flash;
+    }
+
+    return null;
+}
