@@ -7,10 +7,18 @@ startSecureSession();
 if (isset($_POST['login'])) {
     verifyCsrf();
 
-    $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $email = '';
+    $password = '';
 
-    if ($email === '' || $password === '') {
+    if (isset($_POST['email'])) {
+        $email = trim($_POST['email']);
+    }
+
+    if (isset($_POST['password'])) {
+        $password = $_POST['password'];
+    }
+
+    if ($email == '' || $password == '') {
         echo "<script>alert('All fields are required!');</script>";
     } elseif (!validEmail($email)) {
         echo "<script>alert('Please enter a valid email address!');</script>";
@@ -68,7 +76,7 @@ if (isset($_POST['login'])) {
     <img src="parking.png" width="100" alt="Parking">
     <h2>LOGIN</h2>
     <form method="post" action="">
-      <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
+      <input type="hidden" name="csrf_token" value="<?php echo csrfToken(); ?>">
       <div class="input-box">
         <input type="email" name="email" placeholder="Enter your email" required>
       </div>
@@ -85,4 +93,3 @@ if (isset($_POST['login'])) {
   </div>
 </body>
 </html>
-
