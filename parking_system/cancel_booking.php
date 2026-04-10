@@ -23,6 +23,7 @@ if (!$bookingId) {
     exit();
 }
 
+// Cancel the booking
 $stmt = $conn->prepare("UPDATE bookings SET status = 'CANCELLED' WHERE id = ? AND user_id = ? AND status = 'ACTIVE'");
 $stmt->bind_param("ii", $bookingId, $_SESSION['user_id']);
 $stmt->execute();
@@ -35,3 +36,4 @@ if ($stmt->affected_rows > 0) {
 
 header('Location: view_booking.php');
 exit();
+?>
