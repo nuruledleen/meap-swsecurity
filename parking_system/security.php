@@ -44,10 +44,17 @@ function requireLogin()
 {
     startSecureSession();
 
-    if (!isset($_SESSION['user_id'])) {
-        header('Location: login.php');
+    if (isset($_SESSION['user_id'])) {
+        return;
+    }
+
+    if (isset($_SESSION['temp_user_id'])) {
+        header('Location: otp.php');
         exit();
     }
+
+    header('Location: login.php');
+    exit();
 }
 
 function e($value)
