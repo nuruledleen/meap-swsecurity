@@ -31,12 +31,15 @@ if (isset($_POST['login'])) {
 
         if ($user && password_verify($password, $user['password'])) {
             session_regenerate_id(true);
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['name'] = $user['name'];
+            $_SESSION['temp_user_id'] = $user['id'];
+            $_SESSION['temp_name'] = $user['name'];
+
+            $otp = rand(100000, 999999);
+            $_SESSION['generated_otp] = $otp;
 
             echo "<script>
-                    alert('Login successful!');
-                    window.location.href='dashboard.php';
+                    alert('MFA Required! Your code is: $otp');
+                    window.location.href='otp.php';
                   </script>";
             exit();
         }
