@@ -23,6 +23,23 @@ if (!$bookingId) {
     exit();
 }
 
+$checkTime = $conn->prepare("
+    SELECT date, start_time FROM bookings 
+    WHERE id = ? AND user_id = ?
+");
+$checkTime->bind_param("ii", $bookingId, $_SESSION['user_id']);
+$checkTime->execute();
+$data = $checkTime->get_result()->fetch_assoc();
+
+if ($data) {
+    $bookingDateTime = strtotime($data['date'] . ' ' . $data['start_time']);
+    if ($bookingDateTime < time()) {
+        setFlash('error', 'Cannot cancel past bookings.');
+        header('Location: view_booking.php');
+        exit();
+    }
+}
+
 // Cancel the booking
 $stmt = $conn->prepare("UPDATE bookings SET status = 'CANCELLED' WHERE id = ? AND user_id = ? AND status = 'ACTIVE'");
 $stmt->bind_param("ii", $bookingId, $_SESSION['user_id']);

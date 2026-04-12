@@ -104,26 +104,15 @@ function validTime($time)
     return false;
 }
 
-function bookingDateTimeIsFuture($date, $time)
-{
-    $booking = DateTime::createFromFormat('Y-m-d H:i', $date . ' ' . $time);
-    $now = new DateTime();
-
-    if ($booking && $booking >= $now) {
-        return true;
-    }
-
-    return false;
-}
-
-function allowedSlots()
-{
-    return array('A1', 'A2', 'A3', 'A4', 'B1', 'B2', 'B3', 'B4');
-}
-
 function validSlot($slot)
 {
-    return in_array($slot, allowedSlots());
+    global $conn;
+
+    $stmt = $conn->prepare("SELECT id FROM parking_slots WHERE slot_number = ?");
+    $stmt->bind_param("s", $slot);
+    $stmt->execute();
+
+    return $stmt->get_result()->num_rows > 0;
 }
 
 function setFlash($type, $message)

@@ -35,13 +35,13 @@ if (isset($_POST['login'])) {
             $_SESSION['temp_name'] = $user['name'];
 
             $otp = rand(100000, 999999);
-            $_SESSION['generated_otp] = $otp;
+            $_SESSION['generated_otp'] = $otp;
 
             echo "<script>
-                    alert('MFA Required! Your code is: $otp');
-                    window.location.href='otp.php';
-                  </script>";
-            exit();
+                  alert('MFA Required! Your code is: " . $otp . "');
+                  window.location.href='otp.php';
+                </script>";
+          exit();
         }
 
         echo "<script>alert('Invalid email or password!');</script>";
