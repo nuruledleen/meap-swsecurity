@@ -43,8 +43,8 @@ if (isset($_POST['register'])) {
         echo "<script>alert('Invalid email address!');</script>";
     } elseif ($password !== $confirm) {
         echo "<script>alert('Passwords do not match!');</script>";
-    } elseif (strlen($password) < 8) {
-        echo "<script>alert('Password must be at least 8 characters!');</script>";
+    } elseif (!validPassword($password)) {
+        echo "<script>alert('Password must be at least 8 characters long and include at least one letter and one symbol (e.g., @, #, $)!');</script>";
     } else {
         $check = $conn->prepare("SELECT id FROM users WHERE email = ? OR phone = ?");
         $check->bind_param("ss", $email, $phone);
