@@ -67,6 +67,13 @@ function validEmail($email)
     return filter_var($email, FILTER_VALIDATE_EMAIL);
 }
 
+function validPassword($password)
+{
+    // Regex: 8+ chars, at least 1 letter, 1 symbol
+    $pattern = '/^(?=.*[A-Za-z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/';
+    return preg_match($pattern, $password);
+}
+
 function validName($name)
 {
     return preg_match("/^[A-Za-z' @.-]{3,60}$/", $name);
