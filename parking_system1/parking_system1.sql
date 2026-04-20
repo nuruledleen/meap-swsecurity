@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 12, 2026 at 07:47 AM
+-- Generation Time: Apr 20, 2026 at 11:55 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -29,13 +29,13 @@ SET time_zone = "+00:00";
 
 CREATE TABLE `bookings` (
   `id` int(11) NOT NULL,
-  `user_id` int(11) DEFAULT NULL,
-  `slot_id` int(11) DEFAULT NULL,
-  `plate_number` varchar(20) DEFAULT NULL,
-  `date` date DEFAULT NULL,
-  `start_time` time DEFAULT NULL,
-  `end_time` time DEFAULT NULL,
-  `status` varchar(20) DEFAULT 'ACTIVE'
+  `user_id` int(11) NOT NULL,
+  `slot_id` int(11) NOT NULL,
+  `plate_number` varchar(20) NOT NULL,
+  `date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'ACTIVE'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -43,9 +43,7 @@ CREATE TABLE `bookings` (
 --
 
 INSERT INTO `bookings` (`id`, `user_id`, `slot_id`, `plate_number`, `date`, `start_time`, `end_time`, `status`) VALUES
-(2, 1, 1, 'VQF6700', '2026-04-11', '14:04:00', '15:22:00', 'ACTIVE'),
-(5, 2, 2, 'WAH1234', '2026-04-11', '14:00:00', '15:00:00', 'ACTIVE'),
-(6, 3, 3, 'QSA2345', '2026-04-11', '14:20:00', '16:00:00', 'CANCELLED');
+(2, 4, 3, 'VQF6700', '2026-04-20', '18:00:00', '18:45:00', 'ACTIVE');
 
 -- --------------------------------------------------------
 
@@ -84,6 +82,7 @@ CREATE TABLE `users` (
   `email` varchar(100) NOT NULL,
   `phone` varchar(15) NOT NULL,
   `password` varchar(255) NOT NULL,
+  `role` enum('admin','user') NOT NULL DEFAULT 'user',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -91,10 +90,10 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `email`, `phone`, `password`, `created_at`) VALUES
-(1, 'Park Jihyo', 'jihyo@gmail.com', '0192345678', '$2y$10$1A4C7S4UkeDQUBVz6AgpZOv7OVJi1H.nV4s839eBkEMybQ1diMIyq', '2026-04-11 00:51:26'),
-(2, 'Edleen', 'uni.edleen@gmail.com', '0197724467', '$2y$10$NpbvGmiLHxRGBWPdAUHX6ewmvTkQB25fKKaq4IQ4oenxwRWrhb78u', '2026-04-11 05:27:23'),
-(3, 'Alya', 'alya@gmail.com', '0197714467', '$2y$10$G48cnrSkfXz3Gcn18AKJ3e1DuVbE7Sb72B8nO2AN1WXSj5UOoKYk6', '2026-04-11 06:14:43');
+INSERT INTO `users` (`id`, `name`, `email`, `phone`, `password`, `role`, `created_at`) VALUES
+(1, 'System Admin', 'admin@parking.com', '01112345678', '$2y$10$2kBxW1B3M8ZR5oV6t6PzUe9nq7vA0E7B50l9p4xiy0Y5Lw1C4Vf2G', 'admin', '2026-04-20 08:54:00'),
+(3, 'Admin One', 'admin1@yahoo.com', '0197724467', '$2y$10$aZkpWsIeZk6o.NKUNzkPfunl/McZReztDKuxGloEADx38TMBIcgWK', 'admin', '2026-04-20 09:05:01'),
+(4, 'Alle', 'alle@gmail.com', '0192345678', '$2y$10$gP29sOQs/2/jQr77M467TOPgY3Q0mMI5RgeiorOF0xnDozn2DOeue', 'user', '2026-04-20 09:53:34');
 
 --
 -- Indexes for dumped tables
@@ -105,7 +104,8 @@ INSERT INTO `users` (`id`, `name`, `email`, `phone`, `password`, `created_at`) V
 --
 ALTER TABLE `bookings`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `slot_id` (`slot_id`);
+  ADD KEY `fk_booking_user` (`user_id`),
+  ADD KEY `fk_booking_slot` (`slot_id`);
 
 --
 -- Indexes for table `parking_slots`
@@ -130,7 +130,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `parking_slots`
@@ -142,7 +142,7 @@ ALTER TABLE `parking_slots`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- Constraints for dumped tables
@@ -152,7 +152,8 @@ ALTER TABLE `users`
 -- Constraints for table `bookings`
 --
 ALTER TABLE `bookings`
-  ADD CONSTRAINT `bookings_ibfk_1` FOREIGN KEY (`slot_id`) REFERENCES `parking_slots` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `fk_booking_slot` FOREIGN KEY (`slot_id`) REFERENCES `parking_slots` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_booking_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

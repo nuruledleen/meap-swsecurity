@@ -1,110 +1,82 @@
 <?php
 require_once 'security.php';
+require_once 'connect.php';
+
 startSecureSession();
+$purpose = $_GET['purpose'] ?? 'register';
 
-// 1. Handle OTP Verification
+if ($purpose !== 'register' || !isset($_SESSION['pending_registration'])) {
+    header('Location: register.php');
+    exit();
+}
+
 if (isset($_POST['verify_otp'])) {
-    $user_input = trim($_POST['otp_code']);
-    
-    if ($user_input == $_SESSION['generated_otp']) {
-        // Promote temporary session to official session
-        $_SESSION['user_id'] = $_SESSION['temp_user_id'];
-        $_SESSION['name'] = $_SESSION['temp_name'];
+    verifyCsrf();
+    $userInput = trim($_POST['otp_code'] ?? '');
 
-        // Clear MFA-related session data
-        unset($_SESSION['temp_user_id']);
-        unset($_SESSION['temp_name']);
-        unset($_SESSION['generated_otp']);
+    if (time() > ($_SESSION['registration_otp_expiry'] ?? 0)) {
+        $error = 'OTP expired. Please register again.';
+    } elseif ($userInput === ($_SESSION['registration_otp'] ?? '')) {
+        $pending = $_SESSION['pending_registration'];
+        $role = 'user';
 
-        echo "<script>
-                alert('MFA Verified! Welcome to our Smart Parking Reservation System.');
-                window.location.href='index.php';
-              </script>";
+        $stmt = $conn->prepare('INSERT INTO users (name, email, phone, password, role) VALUES (?, ?, ?, ?, ?)');
+        $stmt->bind_param('sssss', $pending['name'], $pending['email'], $pending['phone'], $pending['password'], $role);
+        $stmt->execute();
+
+        unset($_SESSION['pending_registration'], $_SESSION['registration_otp'], $_SESSION['registration_otp_expiry']);
+        echo "<script>alert('Registration successful. Please login now.'); window.location.href='login.php';</script>";
         exit();
     } else {
-        echo "<script>alert('Invalid OTP code. Please try again.');</script>";
+        $error = 'Invalid OTP code.';
     }
 }
 
-// 2. Handle Resend Request
 if (isset($_POST['resend_otp'])) {
-    $new_otp = rand(100000, 999999);
-    $_SESSION['generated_otp'] = $new_otp;
-
-    echo "<script>
-            alert('A new MFA code has been generated: $new_otp');
-            window.location.href='otp.php';
-          </script>";
+    verifyCsrf();
+    $newOtp = (string)random_int(100000, 999999);
+    $_SESSION['registration_otp'] = $newOtp;
+    $_SESSION['registration_otp_expiry'] = time() + 300;
+    echo "<script>alert('New registration OTP: {$newOtp}'); window.location.href='otp.php?purpose=register';</script>";
     exit();
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MFA Verification</title>
-    <style>
-      @import url('https://fonts.googleapis.com/css?family=Poppins:400,500,600,700&display=swap');
-      *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
-      body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#4070f4;}
-      .wrapper{position:relative;max-width:500px;width:100%;background:#fff;padding:34px;border-radius:6px;box-shadow:0 5px 10px rgba(0,0,0,0.2);}
-      .wrapper h1{font-size:30px;font-weight:600;color:#333;text-align:center;}
-      .wrapper h2{font-size:22px;font-weight:600;color:#333;text-align:center;margin-top:10px;}
-      .wrapper p{font-size:14px;color:#555;text-align:center;margin-top:10px;}
-      .wrapper form{margin-top:20px;}
-      .wrapper form .input-box{height:40px;margin:15px 0;display:flex;justify-content:center;}
-      form .input-box input{height:100%;width:90%;outline:none;padding:0 15px;font-size:14px;color:#333;border:1.5px solid #C7BEBE;border-bottom-width:2.5px;border-radius:6px;transition:all 0.3s ease;text-align:center;letter-spacing:4px;}
-      .input-box input:focus{border-color:#4070f4;}
-      .input-box.button input{color:#fff;letter-spacing:1px;border:none;background:#4070f4;cursor:pointer; font-weight: 500;}
-      .input-box.button input:hover{background:#0e4bf1;}
-      
-      /* Timer & Resend Styles */
-      .timer-section { text-align: center; margin-top: 20px; font-size: 14px; color: #333; }
-      #resend-btn { background: none; border: none; color: #4070f4; font-weight: 600; cursor: pointer; text-decoration: none; display: none; margin: 0 auto; }
-      #resend-btn:hover { text-decoration: underline; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registration OTP</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css?family=Poppins:400,500,600,700&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+    body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#4070f4;}
+    .wrapper{position:relative;max-width:500px;width:100%;background:#fff;padding:34px;border-radius:6px;box-shadow:0 5px 10px rgba(0,0,0,0.2);}
+    .wrapper h1,.wrapper h2,.wrapper p{text-align:center;color:#333;}
+    .wrapper h2{margin-top:10px;}
+    .wrapper p{font-size:14px;margin-top:10px;color:#555;}
+    .input-box{height:44px;margin:15px 0;display:flex;justify-content:center;}
+    .input-box input{height:100%;width:90%;outline:none;padding:0 15px;font-size:14px;color:#333;border:1.5px solid #C7BEBE;border-bottom-width:2.5px;border-radius:6px;text-align:center;letter-spacing:4px;}
+    .input-box.button input,.btn-alt{color:#fff;border:none;background:#4070f4;cursor:pointer;letter-spacing:1px;}
+    .message{width:90%;margin:12px auto;background:#fff1f1;color:#b42318;padding:12px;border-radius:8px;font-size:14px;}
+    .btn-alt{display:block;width:90%;margin:0 auto;padding:12px;border-radius:6px;}
+  </style>
 </head>
 <body>
-  <div class="wrapper">
-    <h1>Verification</h1>
-    <h2>Enter OTP</h2>
-    <p>A 6-digit verification code has been generated for your session.</p>
-
-    <form method="post" action="">
-      <div class="input-box">
-        <input type="text" name="otp_code" placeholder="000000" pattern="\d{6}" maxlength="6" required autofocus>
-      </div>
-      <div class="input-box button">
-        <input type="submit" name="verify_otp" value="Verify & Login">
-      </div>
-    </form>
-
-    <div class="timer-section">
-        <span id="timer-label">Resend code in: <b id="seconds">15</b>s</span>
-        <form method="post" style="margin-top: 0;">
-            <button type="submit" name="resend_otp" id="resend-btn">Resend Code</button>
-        </form>
-    </div>
-  </div>
-
-  <script>
-    let timeLeft = 15;
-    const secondsDisplay = document.getElementById('seconds');
-    const timerLabel = document.getElementById('timer-label');
-    const resendBtn = document.getElementById('resend-btn');
-
-    const countdown = setInterval(() => {
-        timeLeft--;
-        secondsDisplay.textContent = timeLeft;
-
-        if (timeLeft <= 0) {
-            clearInterval(countdown);
-            timerLabel.style.display = 'none'; // Hide the "Resend in..." text
-            resendBtn.style.display = 'block'; // Show the clickable button
-        }
-    }, 1000);
-  </script>
+<div class="wrapper">
+  <h1>Registration Verification</h1>
+  <h2>Enter OTP</h2>
+  <p>This OTP is only used during account registration.</p>
+  <?php if (!empty($error)): ?><div class="message"><?php echo e($error); ?></div><?php endif; ?>
+  <form method="post" action="">
+    <input type="hidden" name="csrf_token" value="<?php echo csrfToken(); ?>">
+    <div class="input-box"><input type="text" name="otp_code" placeholder="000000" pattern="\d{6}" maxlength="6" required autofocus></div>
+    <div class="input-box button"><input type="submit" name="verify_otp" value="Verify Registration"></div>
+  </form>
+  <form method="post" action="" style="margin-top:10px;">
+    <input type="hidden" name="csrf_token" value="<?php echo csrfToken(); ?>">
+    <button type="submit" name="resend_otp" class="btn-alt">Resend OTP</button>
+  </form>
+</div>
 </body>
 </html>

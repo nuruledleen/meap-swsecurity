@@ -1,15 +1,16 @@
 <?php
-
 function startSecureSession()
 {
-    if (session_status() == PHP_SESSION_NONE) {
-        $secure = false;
-
-        if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') {
-            $secure = true;
-        }
-
-        session_set_cookie_params(0, '/', '', $secure, true);
+    if (session_status() === PHP_SESSION_NONE) {
+        $secure = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+        session_set_cookie_params([
+            'lifetime' => 0,
+            'path' => '/',
+            'domain' => '',
+            'secure' => $secure,
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
         session_start();
 
         if (!isset($_SESSION['csrf_token'])) {
@@ -20,58 +21,26 @@ function startSecureSession()
 
 function csrfToken()
 {
-    if (isset($_SESSION['csrf_token'])) {
-        return $_SESSION['csrf_token'];
-    }
-
-    return '';
+    return $_SESSION['csrf_token'] ?? '';
 }
 
 function verifyCsrf()
 {
-    $token = '';
-
-    if (isset($_POST['csrf_token'])) {
-        $token = $_POST['csrf_token'];
-    }
-
-    if ($token == '' || !hash_equals(csrfToken(), $token)) {
+    $token = $_POST['csrf_token'] ?? '';
+    if ($token === '' || !hash_equals(csrfToken(), $token)) {
+        http_response_code(403);
         exit('Invalid request token.');
     }
 }
 
-function requireLogin()
-{
-    startSecureSession();
-
-    if (isset($_SESSION['user_id'])) {
-        return;
-    }
-
-    if (isset($_SESSION['temp_user_id'])) {
-        header('Location: otp.php');
-        exit();
-    }
-
-    header('Location: login.php');
-    exit();
-}
-
 function e($value)
 {
-    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
 
 function validEmail($email)
 {
     return filter_var($email, FILTER_VALIDATE_EMAIL);
-}
-
-function validPassword($password)
-{
-    // Regex: 8+ chars, at least 1 letter, 1 symbol
-    $pattern = '/^(?=.*[A-Za-z])(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/';
-    return preg_match($pattern, $password);
 }
 
 function validName($name)
@@ -92,42 +61,36 @@ function validPlate($plate)
 function validDate($date)
 {
     $check = DateTime::createFromFormat('Y-m-d', $date);
-
-    if ($check && $check->format('Y-m-d') == $date) {
-        return true;
-    }
-
-    return false;
+    return $check && $check->format('Y-m-d') === $date;
 }
 
 function validTime($time)
 {
     $check = DateTime::createFromFormat('H:i', $time);
+    return $check && $check->format('H:i') === $time;
+}
 
-    if ($check && $check->format('H:i') == $time) {
-        return true;
-    }
-
-    return false;
+function validPasswordStrength($password)
+{
+    return strlen($password) >= 8
+        && preg_match('/[A-Z]/', $password)
+        && preg_match('/[a-z]/', $password)
+        && preg_match('/[0-9]/', $password)
+        && preg_match('/[^A-Za-z0-9]/', $password);
 }
 
 function validSlot($slot)
 {
     global $conn;
-
-    $stmt = $conn->prepare("SELECT id FROM parking_slots WHERE slot_number = ?");
-    $stmt->bind_param("s", $slot);
+    $stmt = $conn->prepare('SELECT id FROM parking_slots WHERE slot_number = ?');
+    $stmt->bind_param('s', $slot);
     $stmt->execute();
-
     return $stmt->get_result()->num_rows > 0;
 }
 
 function setFlash($type, $message)
 {
-    $_SESSION['flash'] = array(
-        'type' => $type,
-        'message' => $message
-    );
+    $_SESSION['flash'] = ['type' => $type, 'message' => $message];
 }
 
 function getFlash()
@@ -137,6 +100,70 @@ function getFlash()
         unset($_SESSION['flash']);
         return $flash;
     }
-
     return null;
+}
+
+function requireLogin()
+{
+    startSecureSession();
+    if (!isset($_SESSION['user_id'])) {
+        header('Location: login.php');
+        exit();
+    }
+}
+
+function requireAdmin()
+{
+    requireLogin();
+    if (($_SESSION['role'] ?? 'user') !== 'admin') {
+        http_response_code(403);
+        exit('Access denied. Admin only.');
+    }
+}
+
+function redirectDashboardByRole()
+{
+    if (($_SESSION['role'] ?? 'user') === 'admin') {
+        header('Location: admin_dashboard.php');
+    } else {
+        header('Location: index.php');
+    }
+    exit();
+}
+
+function loginAttemptsExceeded()
+{
+    $maxAttempts = 5;
+    $lockSeconds = 300;
+
+    if (!isset($_SESSION['login_attempts'])) {
+        $_SESSION['login_attempts'] = 0;
+    }
+
+    if (!isset($_SESSION['login_locked_until'])) {
+        $_SESSION['login_locked_until'] = 0;
+    }
+
+    if ($_SESSION['login_locked_until'] > time()) {
+        return true;
+    }
+
+    if ($_SESSION['login_attempts'] >= $maxAttempts) {
+        $_SESSION['login_locked_until'] = time() + $lockSeconds;
+        $_SESSION['login_attempts'] = 0;
+        return true;
+    }
+
+    return false;
+}
+
+function recordFailedLogin()
+{
+    $_SESSION['login_attempts'] = ($_SESSION['login_attempts'] ?? 0) + 1;
+}
+
+function clearLoginAttempts()
+{
+    $_SESSION['login_attempts'] = 0;
+    $_SESSION['login_locked_until'] = 0;
 }

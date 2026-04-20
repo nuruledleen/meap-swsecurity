@@ -6,6 +6,15 @@ requireLogin();
 
 $flash = getFlash();
 
+// Auto-update expired bookings to COMPLETED
+$update = $conn->prepare("
+    UPDATE bookings 
+    SET status = 'COMPLETED'
+    WHERE status = 'ACTIVE'
+    AND CONCAT(date, ' ', end_time) < NOW()
+");
+$update->execute();
+
 // Updated query to fetch slot number and time fields
 $stmt = $conn->prepare("SELECT b.id, b.plate_number, p.slot_number, b.date, b.start_time, b.end_time, b.status
                         FROM bookings b
@@ -38,9 +47,15 @@ $bookings = $stmt->get_result();
     table{width:100%;border-collapse:collapse;overflow:hidden;}
     th,td{padding:14px 12px;border-bottom:1px solid #e4eaf5;text-align:left;font-size:14px;}
     th{background:#f7f9fe;}
+    .badge {padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;}
+
+.ACTIVE { background:#e9f8ef; color:#216e39; }
+.CANCELLED { background:#fff1f1; color:#b42318; }
+.COMPLETED { background:#edf2ff; color:#365ad8; }
     .status{font-weight:600;}
     .status.active{color:#216e39;}
     .status.cancelled{color:#b42318;}
+    .status.completed {color: #365ad8;}
     .cancel-btn{background:#d64545;color:#fff;border:none;border-radius:6px;padding:10px 12px;cursor:pointer;}
     .cancel-btn.disabled{background:gray;color:#fff;border:none;border-radius:6px;padding:10px 12px;cursor:default;}
     .empty{padding:18px;border:1px dashed #b8c7e6;border-radius:10px;color:#5f6f81;background:#f8fbff;}
@@ -99,7 +114,7 @@ $bookings = $stmt->get_result();
                 $isExpired = $currentTime > $endDateTime;
 
                 if ($booking['status'] == 'ACTIVE' && $isExpired) {
-                    $booking['status'] = 'EXPIRED';
+                    $booking['status'] = 'COMPLETED';
                 }
 
               ?>
@@ -112,11 +127,12 @@ $bookings = $stmt->get_result();
                 <td><?php echo date("h:i A", strtotime($booking['start_time'])); ?></td>
                 <td><?php echo date("h:i A", strtotime($booking['end_time'])); ?></td>
                 <td><?php echo $durationText; ?></td>
-
                 
-                <td class="status <?php echo strtolower(e($booking['status'])); ?>">
+                <td>
+                <span class="badge <?php echo e($booking['status']); ?>">
                   <?php echo e($booking['status']); ?>
-                </td>
+                </span>
+              </td>
 
                 <td>
                   <?php if ($booking['status'] == 'ACTIVE' && !$isExpired): ?>
