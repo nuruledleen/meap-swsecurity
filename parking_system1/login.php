@@ -22,6 +22,8 @@ if (isset($_POST['login'])) {
         echo "<script>alert('All fields are required!');</script>";
     } elseif (!validEmail($email)) {
         echo "<script>alert('Please enter a valid email address!');</script>";
+    } elseif (!validPassword($password)) {
+        echo "<script>alert('Invalid password format! It must contain at least one letter and one symbol.');</script>";
     } else {
         $stmt = $conn->prepare("SELECT id, name, password FROM users WHERE email = ?");
         $stmt->bind_param("s", $email);
