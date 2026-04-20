@@ -42,6 +42,7 @@ $bookings = $stmt->get_result();
     .status.active{color:#216e39;}
     .status.cancelled{color:#b42318;}
     .cancel-btn{background:#d64545;color:#fff;border:none;border-radius:6px;padding:10px 12px;cursor:pointer;}
+    .cancel-btn.disabled{background:gray;color:#fff;border:none;border-radius:6px;padding:10px 12px;cursor:default;}
     .empty{padding:18px;border:1px dashed #b8c7e6;border-radius:10px;color:#5f6f81;background:#f8fbff;}
   </style>
 </head>
@@ -90,6 +91,17 @@ $bookings = $stmt->get_result();
                 $mins = $minutes % 60;
 
                 $durationText = $hours . "h " . $mins . "m";
+
+                // Expiry check
+                $currentTime = time();
+                $endDateTime = strtotime($booking['date'] . ' ' . $booking['end_time']);
+
+                $isExpired = $currentTime > $endDateTime;
+
+                if ($booking['status'] == 'ACTIVE' && $isExpired) {
+                    $booking['status'] = 'EXPIRED';
+                }
+
               ?>
 
               <tr>
@@ -101,19 +113,20 @@ $bookings = $stmt->get_result();
                 <td><?php echo date("h:i A", strtotime($booking['end_time'])); ?></td>
                 <td><?php echo $durationText; ?></td>
 
+                
                 <td class="status <?php echo strtolower(e($booking['status'])); ?>">
                   <?php echo e($booking['status']); ?>
                 </td>
 
                 <td>
-                  <?php if ($booking['status'] == 'ACTIVE'): ?>
+                  <?php if ($booking['status'] == 'ACTIVE' && !$isExpired): ?>
                     <form method="post" action="cancel_booking.php" onsubmit="return confirm('Cancel this booking?');">
                       <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
                       <input type="hidden" name="booking_id" value="<?php echo e($booking['id']); ?>">
                       <button class="cancel-btn" type="submit">Cancel</button>
                     </form>
                   <?php else: ?>
-                    <span>-</span>
+                    <button class="cancel-btn disabled" disabled>Cancel</button>
                   <?php endif; ?>
                 </td>
               </tr>

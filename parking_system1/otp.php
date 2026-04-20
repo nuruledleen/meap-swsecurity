@@ -1,7 +1,6 @@
 <?php
 require_once 'security.php';
-// requireLogin() already calls startSecureSession() internally
-requireLogin();
+startSecureSession();
 
 // 1. Handle OTP Verification
 if (isset($_POST['verify_otp'])) {
@@ -18,8 +17,8 @@ if (isset($_POST['verify_otp'])) {
         unset($_SESSION['generated_otp']);
 
         echo "<script>
-                alert('MFA Verified! Welcome to the dashboard.');
-                window.location.href='dashboard.php';
+                alert('MFA Verified! Welcome to our Smart Parking Reservation System.');
+                window.location.href='index.php';
               </script>";
         exit();
     } else {
@@ -83,7 +82,7 @@ if (isset($_POST['resend_otp'])) {
     </form>
 
     <div class="timer-section">
-        <span id="timer-label">Resend code in: <b id="seconds">30</b>s</span>
+        <span id="timer-label">Resend code in: <b id="seconds">15</b>s</span>
         <form method="post" style="margin-top: 0;">
             <button type="submit" name="resend_otp" id="resend-btn">Resend Code</button>
         </form>
@@ -91,7 +90,7 @@ if (isset($_POST['resend_otp'])) {
   </div>
 
   <script>
-    let timeLeft = 30;
+    let timeLeft = 15;
     const secondsDisplay = document.getElementById('seconds');
     const timerLabel = document.getElementById('timer-label');
     const resendBtn = document.getElementById('resend-btn');

@@ -128,7 +128,7 @@ if (isset($_GET['search'])) {
         <div class="grid">
           <div>
             <label for="parking_date">Parking Date</label>
-            <input type="date" id="parking_date" name="parking_date" value="<?php echo e($selectedDate); ?>" required>
+            <input type="date" id="parking_date" name="parking_date" value="<?php echo e($selectedDate); ?>" min="<?php echo date('Y-m-d'); ?>" required>
           </div>
             <div>
               <label for="start_time">Start Time</label>
